@@ -344,6 +344,10 @@ export type ChunkFilename = string;
  */
 export type ChunkLoadTimeout = number;
 /**
+ * The method of loading chunks (methods included by default are 'jsonp' (web), 'importScripts' (WebWorker), 'require' (sync node.js), 'async-node' (async node.js), but others might be added by plugins).
+ */
+export type ChunkLoading = string;
+/**
  * The global variable used by webpack for loading of chunks.
  */
 export type ChunkLoadingGlobal = string;
@@ -1598,6 +1602,10 @@ export interface Output {
 	 */
 	chunkLoadTimeout?: ChunkLoadTimeout;
 	/**
+	 * The method of loading chunks (methods included by default are 'jsonp' (web), 'importScripts' (WebWorker), 'require' (sync node.js), 'async-node' (async node.js), but others might be added by plugins).
+	 */
+	chunkLoading?: ChunkLoading;
+	/**
 	 * The global variable used by webpack for loading of chunks.
 	 */
 	chunkLoadingGlobal?: ChunkLoadingGlobal;
@@ -2070,6 +2078,10 @@ export interface OutputNormalized {
 	 * Number of milliseconds before chunk request expires.
 	 */
 	chunkLoadTimeout?: ChunkLoadTimeout;
+	/**
+	 * The method of loading chunks (methods included by default are 'jsonp' (web), 'importScripts' (WebWorker), 'require' (sync node.js), 'async-node' (async node.js), but others might be added by plugins).
+	 */
+	chunkLoading?: ChunkLoading;
 	/**
 	 * The global variable used by webpack for loading of chunks.
 	 */
