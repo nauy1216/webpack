@@ -101,7 +101,7 @@ declare class AbstractLibraryPlugin<T> {
 		/**
 		 * used library type
 		 */
-		type: LibraryType;
+		type: string;
 	});
 
 	/**
@@ -1051,7 +1051,7 @@ declare class Compilation {
 				Dependency,
 				{ name: string } & Pick<
 					EntryDescriptionNormalized,
-					"filename" | "dependOn" | "library" | "runtime"
+					"filename" | "chunkLoading" | "dependOn" | "library" | "runtime"
 				>
 			],
 			void
@@ -1061,7 +1061,7 @@ declare class Compilation {
 				Dependency,
 				{ name: string } & Pick<
 					EntryDescriptionNormalized,
-					"filename" | "dependOn" | "library" | "runtime"
+					"filename" | "chunkLoading" | "dependOn" | "library" | "runtime"
 				>,
 				Error
 			],
@@ -1072,7 +1072,7 @@ declare class Compilation {
 				Dependency,
 				{ name: string } & Pick<
 					EntryDescriptionNormalized,
-					"filename" | "dependOn" | "library" | "runtime"
+					"filename" | "chunkLoading" | "dependOn" | "library" | "runtime"
 				>,
 				Module
 			],
@@ -1305,7 +1305,7 @@ declare class Compilation {
 			| string
 			| ({ name: string } & Pick<
 					EntryDescriptionNormalized,
-					"filename" | "dependOn" | "library" | "runtime"
+					"filename" | "chunkLoading" | "dependOn" | "library" | "runtime"
 			  >),
 		callback: (err?: WebpackError, result?: Module) => void
 	): void;
@@ -1314,7 +1314,7 @@ declare class Compilation {
 		dependency: Dependency,
 		options: { name: string } & Pick<
 			EntryDescriptionNormalized,
-			"filename" | "dependOn" | "library" | "runtime"
+			"filename" | "chunkLoading" | "dependOn" | "library" | "runtime"
 		>,
 		callback: (err?: WebpackError, result?: Module) => void
 	): void;
@@ -2367,15 +2367,27 @@ declare class ElectronTargetPlugin {
 	 */
 	apply(compiler: Compiler): void;
 }
-declare class EnableLibraryPlugin {
-	constructor(type: LibraryType);
-	type: LibraryType;
+declare class EnableChunkLoadingPlugin {
+	constructor(type: string);
+	type: string;
 
 	/**
 	 * Apply the plugin
 	 */
 	apply(compiler: Compiler): void;
-	static checkEnabled(compiler: Compiler, type: LibraryType): void;
+	static setEnabled(compiler: Compiler, type: string): void;
+	static checkEnabled(compiler: Compiler, type: string): void;
+}
+declare class EnableLibraryPlugin {
+	constructor(type: string);
+	type: string;
+
+	/**
+	 * Apply the plugin
+	 */
+	apply(compiler: Compiler): void;
+	static setEnabled(compiler: Compiler, type: string): void;
+	static checkEnabled(compiler: Compiler, type: string): void;
 }
 type Entry =
 	| string
@@ -2398,7 +2410,7 @@ declare interface EntryData {
 	 */
 	options: { name: string } & Pick<
 		EntryDescriptionNormalized,
-		"filename" | "dependOn" | "library" | "runtime"
+		"filename" | "chunkLoading" | "dependOn" | "library" | "runtime"
 	>;
 }
 declare abstract class EntryDependency extends ModuleDependency {}
@@ -2407,6 +2419,11 @@ declare abstract class EntryDependency extends ModuleDependency {}
  * An object with entry point description.
  */
 declare interface EntryDescription {
+	/**
+	 * The method of loading chunks (methods included by default are 'jsonp' (web), 'importScripts' (WebWorker), 'require' (sync node.js), 'async-node' (async node.js), but others might be added by plugins).
+	 */
+	chunkLoading?: DevTool;
+
 	/**
 	 * The entrypoints that the current entrypoint depend on. They must be loaded when this entrypoint is loaded.
 	 */
@@ -2437,6 +2454,11 @@ declare interface EntryDescription {
  * An object with entry point description.
  */
 declare interface EntryDescriptionNormalized {
+	/**
+	 * The method of loading chunks (methods included by default are 'jsonp' (web), 'importScripts' (WebWorker), 'require' (sync node.js), 'async-node' (async node.js), but others might be added by plugins).
+	 */
+	chunkLoading?: DevTool;
+
 	/**
 	 * The entrypoints that the current entrypoint depend on. They must be loaded when this entrypoint is loaded.
 	 */
@@ -2485,7 +2507,7 @@ declare class EntryPlugin {
 			| string
 			| ({ name: string } & Pick<
 					EntryDescriptionNormalized,
-					"filename" | "dependOn" | "library" | "runtime"
+					"filename" | "chunkLoading" | "dependOn" | "library" | "runtime"
 			  >)
 	);
 	context: string;
@@ -2494,7 +2516,7 @@ declare class EntryPlugin {
 		| string
 		| ({ name: string } & Pick<
 				EntryDescriptionNormalized,
-				"filename" | "dependOn" | "library" | "runtime"
+				"filename" | "chunkLoading" | "dependOn" | "library" | "runtime"
 		  >);
 
 	/**
@@ -2507,7 +2529,7 @@ declare class EntryPlugin {
 			| string
 			| ({ name: string } & Pick<
 					EntryDescriptionNormalized,
-					"filename" | "dependOn" | "library" | "runtime"
+					"filename" | "chunkLoading" | "dependOn" | "library" | "runtime"
 			  >)
 	): EntryDependency;
 }
@@ -4017,9 +4039,9 @@ declare interface LibraryOptions {
 	name?: LibraryName;
 
 	/**
-	 * Type of library.
+	 * Type of library (types included by default are 'var', 'module', 'assign', 'this', 'window', 'self', 'global', 'commonjs', 'commonjs2', 'commonjs-module', 'amd', 'amd-require', 'umd', 'umd2', 'jsonp', 'system', but others might be added by plugins).
 	 */
-	type: LibraryType;
+	type: string;
 
 	/**
 	 * If `output.libraryTarget` is set to umd and `output.library` is set, setting this to true will name the AMD module.
@@ -4029,13 +4051,13 @@ declare interface LibraryOptions {
 declare class LibraryTemplatePlugin {
 	constructor(
 		name: LibraryName,
-		target: LibraryType,
+		target: string,
 		umdNamedDefine: boolean,
 		auxiliaryComment: AuxiliaryComment,
 		exportProperty: LibraryExport
 	);
 	library: {
-		type: LibraryType;
+		type: string;
 		name: LibraryName;
 		umdNamedDefine: boolean;
 		auxiliaryComment: AuxiliaryComment;
@@ -4047,23 +4069,6 @@ declare class LibraryTemplatePlugin {
 	 */
 	apply(compiler: Compiler): void;
 }
-type LibraryType =
-	| "var"
-	| "module"
-	| "assign"
-	| "this"
-	| "window"
-	| "self"
-	| "global"
-	| "commonjs"
-	| "commonjs2"
-	| "commonjs-module"
-	| "amd"
-	| "amd-require"
-	| "umd"
-	| "umd2"
-	| "jsonp"
-	| "system";
 declare class LimitChunkCountPlugin {
 	constructor(options?: LimitChunkCountPluginOptions);
 	options: LimitChunkCountPluginOptions;
@@ -5586,6 +5591,11 @@ declare interface Output {
 	chunkFilename?: string;
 
 	/**
+	 * The format of chunks (formats included by default are 'array-push' (web/WebWorker), 'commonjs' (node.js), but others might be added by plugins).
+	 */
+	chunkFormat?: DevTool;
+
+	/**
 	 * Number of milliseconds before chunk request expires.
 	 */
 	chunkLoadTimeout?: number;
@@ -5593,7 +5603,7 @@ declare interface Output {
 	/**
 	 * The method of loading chunks (methods included by default are 'jsonp' (web), 'importScripts' (WebWorker), 'require' (sync node.js), 'async-node' (async node.js), but others might be added by plugins).
 	 */
-	chunkLoading?: string;
+	chunkLoading?: DevTool;
 
 	/**
 	 * The global variable used by webpack for loading of chunks.
@@ -5631,9 +5641,14 @@ declare interface Output {
 	ecmaVersion?: number;
 
 	/**
+	 * List of chunk loading types enabled for use by entry points.
+	 */
+	enabledChunkLoadingTypes?: string[];
+
+	/**
 	 * List of library types enabled for use by entry points.
 	 */
-	enabledLibraryTypes?: LibraryType[];
+	enabledLibraryTypes?: string[];
 
 	/**
 	 * Specifies the name of each output file on disk. You must **not** specify an absolute path here! The `output.path` option determines the location on disk the files are written to, filename is used solely for naming the individual files.
@@ -5701,9 +5716,9 @@ declare interface Output {
 	libraryExport?: LibraryExport;
 
 	/**
-	 * Type of library.
+	 * Type of library (types included by default are 'var', 'module', 'assign', 'this', 'window', 'self', 'global', 'commonjs', 'commonjs2', 'commonjs-module', 'amd', 'amd-require', 'umd', 'umd2', 'jsonp', 'system', but others might be added by plugins).
 	 */
-	libraryTarget?: LibraryType;
+	libraryTarget?: string;
 
 	/**
 	 * Output javascript files as module source type.
@@ -5805,6 +5820,11 @@ declare interface OutputNormalized {
 	chunkFilename?: string;
 
 	/**
+	 * The format of chunks (formats included by default are 'array-push' (web/WebWorker), 'commonjs' (node.js), but others might be added by plugins).
+	 */
+	chunkFormat?: DevTool;
+
+	/**
 	 * Number of milliseconds before chunk request expires.
 	 */
 	chunkLoadTimeout?: number;
@@ -5812,7 +5832,7 @@ declare interface OutputNormalized {
 	/**
 	 * The method of loading chunks (methods included by default are 'jsonp' (web), 'importScripts' (WebWorker), 'require' (sync node.js), 'async-node' (async node.js), but others might be added by plugins).
 	 */
-	chunkLoading?: string;
+	chunkLoading?: DevTool;
 
 	/**
 	 * The global variable used by webpack for loading of chunks.
@@ -5850,9 +5870,14 @@ declare interface OutputNormalized {
 	ecmaVersion?: number;
 
 	/**
+	 * List of chunk loading types enabled for use by entry points.
+	 */
+	enabledChunkLoadingTypes?: string[];
+
+	/**
 	 * List of library types enabled for use by entry points.
 	 */
-	enabledLibraryTypes?: LibraryType[];
+	enabledLibraryTypes?: string[];
 
 	/**
 	 * Specifies the name of each output file on disk. You must **not** specify an absolute path here! The `output.path` option determines the location on disk the files are written to, filename is used solely for naming the individual files.
@@ -9315,7 +9340,7 @@ declare namespace exports {
 		};
 	}
 	export namespace javascript {
-		export { JavascriptModulesPlugin };
+		export { EnableChunkLoadingPlugin, JavascriptModulesPlugin };
 	}
 	export namespace optimize {
 		export {
